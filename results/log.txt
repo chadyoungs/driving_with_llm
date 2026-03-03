@@ -1,0 +1,2 @@
+memory_path memories/20_mem | result_folder results | few_shot_num: 3 | lanes_count: 4 
+Simulation 0 | Seed 5214 | Steps: 0 | File prefix: highway_0 
