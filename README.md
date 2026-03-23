@@ -1,3 +1,9 @@
 # Driving with LLM repo
 
-> this repo build with others' opensource projects in VLM-Drive and Simulation Environments.
+> this repo was build up based on the others' opensource projects in VLM-Drive and Simulation Environments.
+
+# Acknowledgements
+
+DriveVLM, 
+
+Dilu series

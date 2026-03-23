@@ -8,10 +8,10 @@ from rich import print
 import gymnasium as gym
 from gymnasium.wrappers import RecordVideo
 
-from dilu.scenario.envScenario import EnvScenario
-from dilu.driver_agent.driverAgent import DriverAgent
-from dilu.driver_agent.vectorStore import DrivingMemory
-from dilu.driver_agent.reflectionAgent import ReflectionAgent
+from driving_with_llm.scenario.envScenario import EnvScenario
+from driving_with_llm.driver_agent.driverAgent import DriverAgent
+from driving_with_llm.driver_agent.vectorStore import DrivingMemory
+from driving_with_llm.driver_agent.reflectionAgent import ReflectionAgent
 
 
 test_list_seed = [5838, 2421, 7294, 9650, 4176, 6382, 8765, 1348,
@@ -19,23 +19,9 @@ test_list_seed = [5838, 2421, 7294, 9650, 4176, 6382, 8765, 1348,
 
 
 def setup_env(config):
-    if config['OPENAI_API_TYPE'] == 'azure':
-        os.environ["OPENAI_API_TYPE"] = config['OPENAI_API_TYPE']
-        os.environ["OPENAI_API_VERSION"] = config['AZURE_API_VERSION']
-        os.environ["OPENAI_API_BASE"] = config['AZURE_API_BASE']
-        os.environ["OPENAI_API_KEY"] = config['AZURE_API_KEY']
-        os.environ["AZURE_CHAT_DEPLOY_NAME"] = config['AZURE_CHAT_DEPLOY_NAME']
-        os.environ["AZURE_EMBED_DEPLOY_NAME"] = config['AZURE_EMBED_DEPLOY_NAME']
-    elif config['OPENAI_API_TYPE'] == 'openai':
-        os.environ["OPENAI_API_TYPE"] = config['OPENAI_API_TYPE']
-        os.environ["OPENAI_API_KEY"] = config['OPENAI_KEY']
-        os.environ["OPENAI_CHAT_MODEL"] = config['OPENAI_CHAT_MODEL']
-    elif config['OPENAI_API_TYPE'] == 'local':
-        os.environ["OPENAI_API_TYPE"] = 'open_ai' # For compatibility, use 'open_ai' to indicate local LLM in the codebase
-        os.environ["OPENAI_API_KEY"] = config['OPENAI_KEY']
-        os.environ["OPENAI_CHAT_MODEL"] = config['OPENAI_CHAT_MODEL']
-    else:
-        raise ValueError("Unknown OPENAI_API_TYPE, should be azure or openai or local")
+    os.environ["OPENAI_API_TYPE"] = 'open_ai' # For compatibility, use 'open_ai' to indicate local LLM in the codebase
+    os.environ["OPENAI_API_KEY"] = config['MODEL_NAME']
+    os.environ["OPENAI_CHAT_MODEL"] = config['MODEL_NAME']
     
     os.environ["LOCAL_MODEL_NAME"] = config["MODEL_NAME"]
     # environment setting
@@ -82,6 +68,7 @@ if __name__ == '__main__':
     memory_path = config["memory_path"]
     few_shot_num = config["few_shot_num"]
     result_folder = config["result_folder"]
+    
     if not os.path.exists(result_folder):
         os.makedirs(result_folder)
     with open(result_folder + "/" + 'log.txt', 'w') as f:
@@ -95,20 +82,28 @@ if __name__ == '__main__':
 
     episode = 0
     while episode < config["episodes_num"]:
+        
         # setup highway-env
         envType = 'highway-v0'
         env = gym.make(envType, render_mode="rgb_array")
-        env.configure(env_config[envType])
+        env.unwrapped.configure(env_config[envType])
+
         result_prefix = f"highway_{episode}"
+        # Wrap RecordVideo after all env configuration and before .reset()
+        
         env = RecordVideo(env, result_folder, name_prefix=result_prefix)
         env.unwrapped.set_record_video_wrapper(env)
+        
+        
         seed = random.choice(test_list_seed)
         obs, info = env.reset(seed=seed)
+        env.recording = True
         env.render()
-
+        #env.unwrapped.automatic_rendering_callback = env.video_recorder.capture_frame()
+        
         # scenario and driver agent setting
         database_path = result_folder + "/" + result_prefix + ".db"
-        sce = EnvScenario(env, envType, seed, database_path)
+        sce = EnvScenario(env.unwrapped, envType, seed, database_path)
         DA = DriverAgent(sce, verbose=True)
         if REFLECTION:
             RA = ReflectionAgent(verbose=True)
@@ -169,7 +164,7 @@ if __name__ == '__main__':
                 env.render()
                 sce.promptsCommit(i, None, done, human_question,
                                   fewshot_answer, response)
-                env.unwrapped.automatic_rendering_callback = env.video_recorder.capture_frame()
+                
 
                 print("--------------------")
 
