@@ -4,8 +4,8 @@ from rich import print
 import gradio as gr
 import yaml
 import argparse
-from dilu.scenario.envScenarioReplay import EnvScenarioReplay
-from dilu.driver_agent.vectorStore import DrivingMemory
+from driving_with_llm.scenario.envScenarioReplay import EnvScenarioReplay
+from driving_with_llm.driver_agent.vectorStore import DrivingMemory
 
 
 config = yaml.load(open('config.yaml'), Loader=yaml.FullLoader)
