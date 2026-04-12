@@ -1,17 +1,12 @@
 import gymnasium as gym
-from gymnasium.wrappers import (
-    FrameStackObservation,
-    RecordVideo,
-)
-
-import numpy as np
 import matplotlib.pyplot as plt
-
+import numpy as np
+from gymnasium.wrappers import FrameStackObservation, RecordVideo
 from highway_env.envs.common.abstract import AbstractEnv
-from highway_env.road.lane import LineType, StraightLane, CircularLane
+from highway_env.road.lane import CircularLane, LineType, StraightLane
 from highway_env.road.road import Road, RoadNetwork
-from highway_env.vehicle.controller import ControlledVehicle
 from highway_env.vehicle.behavior import IDMVehicle
+from highway_env.vehicle.controller import ControlledVehicle
 
 """_summary_
         "highway-v0": {
@@ -87,17 +82,17 @@ def plot_road_network(road_obj: Road):
             for lane in lanes_list:
                 # 采样车道点
                 s = np.linspace(0, lane.length, 150)
-                
+
                 # 中心线
                 xy = np.array([lane.position(si, 0) for si in s])
                 ax.plot(xy[:, 0], xy[:, 1], color="gray", linestyle="--", linewidth=1.5)
-                
+
                 # 左边界
-                xy_left = np.array([lane.position(si, -lane.width/2) for si in s])
+                xy_left = np.array([lane.position(si, -lane.width / 2) for si in s])
                 ax.plot(xy_left[:, 0], xy_left[:, 1], color="black", linewidth=1)
-                
+
                 # 右边界
-                xy_right = np.array([lane.position(si, lane.width/2) for si in s])
+                xy_right = np.array([lane.position(si, lane.width / 2) for si in s])
                 ax.plot(xy_right[:, 0], xy_right[:, 1], color="black", linewidth=1)
 
     # 样式
@@ -110,7 +105,8 @@ def plot_road_network(road_obj: Road):
     plt.savefig("road_network.png", dpi=300)
     plt.close()
     print("✅ 路网图已保存为 road_network.png")
- 
+
+
 def make_real_cross_road() -> Road:
     road = Road(
         network=RoadNetwork(),
@@ -119,7 +115,7 @@ def make_real_cross_road() -> Road:
     )
     L = 100
     W = 4.0
-    C = np.array([0., 0.])
+    C = np.array([0.0, 0.0])
 
     road.network.add_lane("S_R", "C", StraightLane(C + [W, -L], C + [W, 0], 20))
     road.network.add_lane("S_T", "C", StraightLane(C + [0, -L], C + [0, 0], 20))
@@ -143,31 +139,34 @@ def make_real_cross_road() -> Road:
     road.network.add_lane("C", "W", StraightLane(C, C + [-L, 0], 20))
 
     r = 8.0
-    road.network.add_lane("S_L", "E", CircularLane(C, r, np.pi/2, np.pi, True, 15))
-    road.network.add_lane("N_L", "W", CircularLane(C, r, -np.pi/2, 0, True, 15))
-    road.network.add_lane("W_L", "S", CircularLane(C, r, np.pi, -np.pi/2, True, 15))
-    road.network.add_lane("E_L", "N", CircularLane(C, r, 0, np.pi/2, True, 15))
+    road.network.add_lane("S_L", "E", CircularLane(C, r, np.pi / 2, np.pi, True, 15))
+    road.network.add_lane("N_L", "W", CircularLane(C, r, -np.pi / 2, 0, True, 15))
+    road.network.add_lane("W_L", "S", CircularLane(C, r, np.pi, -np.pi / 2, True, 15))
+    road.network.add_lane("E_L", "N", CircularLane(C, r, 0, np.pi / 2, True, 15))
 
     r = 3.5
-    road.network.add_lane("S_R", "W", CircularLane(C, r, np.pi/2, 0, False, 15))
-    road.network.add_lane("N_R", "E", CircularLane(C, r, -np.pi/2, -np.pi, False, 15))
-    road.network.add_lane("W_R", "N", CircularLane(C, r, np.pi, np.pi/2, False, 15))
-    road.network.add_lane("E_R", "S", CircularLane(C, r, 0, -np.pi/2, False, 15))
+    road.network.add_lane("S_R", "W", CircularLane(C, r, np.pi / 2, 0, False, 15))
+    road.network.add_lane("N_R", "E", CircularLane(C, r, -np.pi / 2, -np.pi, False, 15))
+    road.network.add_lane("W_R", "N", CircularLane(C, r, np.pi, np.pi / 2, False, 15))
+    road.network.add_lane("E_R", "S", CircularLane(C, r, 0, -np.pi / 2, False, 15))
 
     return road
+
 
 class RealSignalIntersectionEnv(AbstractEnv):
     @classmethod
     def default_config(cls) -> dict:
         config = super().default_config()
-        config.update({
-            "observation": {"type": "Kinematics", "vehicles_count": 4},
-            "action": {"type": "DiscreteMetaAction"},
-            "simulation_frequency": 15,
-            "policy_frequency": 10,
-            "collision_reward": -50,
-            "offroad_terminal": True,
-        })
+        config.update(
+            {
+                "observation": {"type": "Kinematics", "vehicles_count": 4},
+                "action": {"type": "DiscreteMetaAction"},
+                "simulation_frequency": 15,
+                "policy_frequency": 10,
+                "collision_reward": -50,
+                "offroad_terminal": True,
+            }
+        )
         return config
 
     def __init__(self, *args, **kwargs):
@@ -264,13 +263,18 @@ class RealSignalIntersectionEnv(AbstractEnv):
             record_history=False,
         )
         """
+
     def _create_vehicles(self):
         # ===================== 修复：全部使用正确索引 (from, to, 0) =====================
-        ego = ControlledVehicle.make_on_lane(self.road, ("0", "1", 0), speed=15, longitudinal=0)
+        ego = ControlledVehicle.make_on_lane(
+            self.road, ("0", "1", 0), speed=15, longitudinal=0
+        )
         self.road.vehicles.append(ego)
         self.controlled_vehicles = [ego]
 
-        car = IDMVehicle.make_on_lane(self.road, ("0", "1", 0), speed=15, longitudinal=30)
+        car = IDMVehicle.make_on_lane(
+            self.road, ("0", "1", 0), speed=15, longitudinal=30
+        )
         self.road.vehicles.append(car)
 
     def _step(self, action):
@@ -285,12 +289,12 @@ class RealSignalIntersectionEnv(AbstractEnv):
         if near_stop:
             x, y = ego.position
             if not (
-                (self.phase == 0 and y < 0) or
-                (self.phase == 1 and y < 0) or
-                (self.phase == 2 and x < 0) or
-                (self.phase == 3 and x < 0)
+                (self.phase == 0 and y < 0)
+                or (self.phase == 1 and y < 0)
+                or (self.phase == 2 and x < 0)
+                or (self.phase == 3 and x < 0)
             ):
-                ego.act({"steering": 0, "acceleration": -1.0}, 1/15)
+                ego.act({"steering": 0, "acceleration": -1.0}, 1 / 15)
 
         return super()._step(action)
 
@@ -298,12 +302,15 @@ class RealSignalIntersectionEnv(AbstractEnv):
         return -0.1 + 0.6 * self.controlled_vehicles[0].speed / 20
 
     def _is_terminated(self):
-        return self.controlled_vehicles[0].crashed \
-               or not self.controlled_vehicles[0].on_road \
-               or self.steps > 180
-    
+        return (
+            self.controlled_vehicles[0].crashed
+            or not self.controlled_vehicles[0].on_road
+            or self.steps > 180
+        )
+
     def _is_truncated(self):
         return False
+
 
 gym.register(
     id="real-signal-intersection-v0",

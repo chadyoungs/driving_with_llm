@@ -1,14 +1,9 @@
 import torch
 from datasets import load_dataset
-from transformers import (
-    AutoModelForCausalLM,
-    AutoTokenizer,
-    BitsAndBytesConfig,
-    TrainingArguments,
-    Trainer,
-    DataCollatorForLanguageModeling,
-)
 from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
+from transformers import (AutoModelForCausalLM, AutoTokenizer,
+                          BitsAndBytesConfig, DataCollatorForLanguageModeling,
+                          Trainer, TrainingArguments)
 
 # ====================== 1. 基础配置（根据你的路径修改） ======================
 MODEL_NAME = "Qwen/Qwen3.5-0.8B-Instruct"  # 本地模型路径或HF仓库名

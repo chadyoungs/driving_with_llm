@@ -3,25 +3,14 @@ import textwrap
 import time
 from typing import List
 
-from langchain.messages import (
-    AIMessage,
-    HumanMessage,
-    SystemMessage,
-)
-from langchain_community.callbacks.manager import (
-    OpenAICallbackHandler,
-    get_openai_callback,
-)
+from langchain.messages import AIMessage, HumanMessage, SystemMessage
+from langchain_community.callbacks.manager import (OpenAICallbackHandler,
+                                                   get_openai_callback)
 from langchain_ollama import ChatOllama
-from langchain_openai import (
-    AzureChatOpenAI,
-    ChatOpenAI,
-)
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from rich import print
 
-from driving_with_llm.scenario.envScenario import (
-    EnvScenario,
-)
+from driving_with_llm.scenario.envScenario import EnvScenario
 
 delimiter = "####"
 example_message = textwrap.dedent(

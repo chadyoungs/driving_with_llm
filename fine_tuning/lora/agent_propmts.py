@@ -62,7 +62,6 @@ Reminder you MUST use the EXACT characters `Final Answer` when responding the fi
 HUMAN_MESSAGE = "{input}\n\n{agent_scratchpad}"
 
 
-
 IDLE_THOUGHT = "All conditions safe, keep speed and lane. #### 0"
 LEFT_LANE_CHANGE_THOUGHT = "There is a slower vehicle in front, and the left lane is clear, change lane to left. #### 1"
 RIGHT_LANE_CHANGE_THOUGHT = "There is a slower vehicle in front, and the right lane is clear, change lane to right. #### 2"

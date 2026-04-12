@@ -2,24 +2,11 @@ import sqlite3
 from typing import List
 
 import numpy as np
-from highway_env.envs.common.abstract import (
-    AbstractEnv,
-)
-from highway_env.road.lane import (
-    CircularLane,
-    SineLane,
-    StraightLane,
-)
-from highway_env.road.road import (
-    LaneIndex,
-    RoadNetwork,
-)
-from highway_env.vehicle.behavior import (
-    IDMVehicle,
-)
-from highway_env.vehicle.controller import (
-    MDPVehicle,
-)
+from highway_env.envs.common.abstract import AbstractEnv
+from highway_env.road.lane import CircularLane, SineLane, StraightLane
+from highway_env.road.road import LaneIndex, RoadNetwork
+from highway_env.vehicle.behavior import IDMVehicle
+from highway_env.vehicle.controller import MDPVehicle
 
 
 class DBBridge:
@@ -123,7 +110,9 @@ class DBBridge:
             cl.end[0],
             num=50,
         )
-        y = cl.start[1] + cl.amplitude * np.sin(cl.pulsation * (x - cl.start[0]) + cl.phase)
+        y = cl.start[1] + cl.amplitude * np.sin(
+            cl.pulsation * (x - cl.start[0]) + cl.phase
+        )
 
         return " ".join([f"{x[i]},{y[i]}" for i in range(len(x))])
 

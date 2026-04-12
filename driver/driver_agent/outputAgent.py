@@ -3,22 +3,11 @@ import json
 import os
 import sqlite3
 
-from langchain.output_parsers import (
-    ResponseSchema,
-    StructuredOutputParser,
-)
-from langchain.prompts import (
-    ChatPromptTemplate,
-    HumanMessagePromptTemplate,
-)
-from langchain_community.callbacks.manager import (
-    get_openai_callback,
-)
+from langchain.output_parsers import ResponseSchema, StructuredOutputParser
+from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
+from langchain_community.callbacks.manager import get_openai_callback
 from langchain_ollama import ChatOllama
-from langchain_openai import (
-    AzureChatOpenAI,
-    ChatOpenAI,
-)
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from rich import print
 from scenario.scenario import Scenario
 
@@ -55,7 +44,9 @@ class OutputParser:
                 description=f"Explain for the driver why you make such decision in 40 words.",
             ),
         ]
-        self.output_parser = StructuredOutputParser.from_response_schemas(self.response_schemas)
+        self.output_parser = StructuredOutputParser.from_response_schemas(
+            self.response_schemas
+        )
         self.format_instructions = self.output_parser.get_format_instructions()
 
     def agentRun(self, final_results: dict) -> str:
@@ -69,7 +60,9 @@ class OutputParser:
             input_variables=["answer"],
             partial_variables={"format_instructions": self.format_instructions},
         )
-        input = prompt_template.format_prompt(answer=final_results["answer"] + final_results["thoughts"])
+        input = prompt_template.format_prompt(
+            answer=final_results["answer"] + final_results["thoughts"]
+        )
 
         with get_openai_callback() as cb:
             output = self.llm.invoke(input.to_messages())

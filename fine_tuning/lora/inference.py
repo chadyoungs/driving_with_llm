@@ -1,6 +1,6 @@
 import torch
-from transformers import AutoModelForCausalLM, AutoTokenizer
 from peft import PeftModel
+from transformers import AutoModelForCausalLM, AutoTokenizer
 
 # 配置
 BASE_MODEL = "Qwen/Qwen3.5-0.8B-Instruct"

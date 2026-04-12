@@ -1,23 +1,12 @@
 from typing import List, Union
 
 import numpy as np
-from highway_env.road.lane import (
-    CircularLane,
-    PolyLane,
-    PolyLaneFixedWidth,
-    SineLane,
-    StraightLane,
-)
-from highway_env.road.road import (
-    RoadNetwork,
-)
+from highway_env.road.lane import (CircularLane, PolyLane, PolyLaneFixedWidth,
+                                   SineLane, StraightLane)
+from highway_env.road.road import RoadNetwork
 from highway_env.utils import Vector
-from highway_env.vehicle.behavior import (
-    IDMVehicle,
-)
-from highway_env.vehicle.controller import (
-    MDPVehicle,
-)
+from highway_env.vehicle.behavior import IDMVehicle
+from highway_env.vehicle.controller import MDPVehicle
 from matplotlib import pyplot as plt
 from matplotlib.patches import Polygon
 from matplotlib.text import Text
@@ -112,7 +101,9 @@ class ScePlotter:
             elif isinstance(lane, PolyLane):
                 raise NotImplementedError("PolyLane is not supported currently.")
             elif isinstance(lane, PolyLaneFixedWidth):
-                raise NotImplementedError("PolyLaneFixedWidth is not supported currently.")
+                raise NotImplementedError(
+                    "PolyLaneFixedWidth is not supported currently."
+                )
             else:
                 raise TypeError("Unknown lane type")
 

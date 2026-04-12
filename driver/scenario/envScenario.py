@@ -1,43 +1,18 @@
 import math
 import os
 from datetime import datetime
-from typing import (
-    Dict,
-    List,
-    Optional,
-    Tuple,
-    Union,
-)
+from typing import Dict, List, Optional, Tuple, Union
 
 import numpy as np
-from highway_env.envs.common.abstract import (
-    AbstractEnv,
-)
-from highway_env.road.lane import (
-    CircularLane,
-    PolyLane,
-    PolyLaneFixedWidth,
-    SineLane,
-    StraightLane,
-)
-from highway_env.road.road import (
-    LaneIndex,
-    Road,
-    RoadNetwork,
-)
-from highway_env.vehicle.behavior import (
-    IDMVehicle,
-)
-from highway_env.vehicle.controller import (
-    MDPVehicle,
-)
+from highway_env.envs.common.abstract import AbstractEnv
+from highway_env.road.lane import (CircularLane, PolyLane, PolyLaneFixedWidth,
+                                   SineLane, StraightLane)
+from highway_env.road.road import LaneIndex, Road, RoadNetwork
+from highway_env.vehicle.behavior import IDMVehicle
+from highway_env.vehicle.controller import MDPVehicle
 
-from driving_with_llm.scenario.DBBridge import (
-    DBBridge,
-)
-from driving_with_llm.scenario.envPlotter import (
-    ScePlotter,
-)
+from driving_with_llm.scenario.DBBridge import DBBridge
+from driving_with_llm.scenario.envPlotter import ScePlotter
 
 ACTIONS_ALL = {
     0: "LANE_LEFT",
@@ -120,7 +95,9 @@ class EnvScenario:
         avaliableActionDescription = "Your available actions are: \n"
         availableActions = self.env.get_available_actions()
         for action in availableActions:
-            avaliableActionDescription += ACTIONS_DESCRIPTION[action] + " Action_id: " + str(action) + "\n"
+            avaliableActionDescription += (
+                ACTIONS_DESCRIPTION[action] + " Action_id: " + str(action) + "\n"
+            )
 
         return avaliableActionDescription
 
@@ -151,7 +128,9 @@ class EnvScenario:
         sideLanes = self.network.all_side_lanes(lidx)
         numLanes = len(sideLanes)
         if numLanes == 1:
-            description = "You are driving on a road with only one lane, you can't change lane. "
+            description = (
+                "You are driving on a road with only one lane, you can't change lane. "
+            )
         else:
             egoLaneRank = lidx[2]
             if egoLaneRank == 0:
@@ -190,12 +169,12 @@ class EnvScenario:
             return None
 
     def getSVRelativeState(self, sv: IDMVehicle) -> str:
-        # CAUTION: There is an issue here. In Pygame, the y-axis is inverted, 
-        # with the positive direction being downward. Therefore, in highway-v0, 
-        # when the vehicle changes lanes to the left, it actually moves to the right. 
-        # Thus, when determining the relative position of a vehicle to the ego, 
-        # it’s more appropriate to directly judge based on which lane the vehicle is in, 
-        # rather than using vectors. Vectors can only be used to determine whether 
+        # CAUTION: There is an issue here. In Pygame, the y-axis is inverted,
+        # with the positive direction being downward. Therefore, in highway-v0,
+        # when the vehicle changes lanes to the left, it actually moves to the right.
+        # Thus, when determining the relative position of a vehicle to the ego,
+        # it’s more appropriate to directly judge based on which lane the vehicle is in,
+        # rather than using vectors. Vectors can only be used to determine whether
         # the vehicle is in front of or behind the ego
         relativePosition = sv.position - self.ego.position
         egoUnitVector = self.getUnitVector(self.ego.heading)
@@ -363,9 +342,7 @@ class EnvScenario:
                 else:
                     SVDescription += f"The position of it is `({sv.position[0]:.2f}, {sv.position[1]:.2f})`, speed is {sv.speed:.2f} m/s, acceleration is {sv.action['acceleration']:.2f} m/s^2, and lane position is {self.getLanePosition(sv):.2f} m.\n"
             if SVDescription:
-                descriptionPrefix = (
-                    "There are other vehicles driving around you, and below is their basic information:\n"
-                )
+                descriptionPrefix = "There are other vehicles driving around you, and below is their basic information:\n"
                 return descriptionPrefix + SVDescription
             else:
                 SVDescription = "There are no other vehicles driving near you, so you can drive completely according to your own ideas.\n"
@@ -451,9 +428,7 @@ class EnvScenario:
                 else:
                     continue
             if SVDescription:
-                descriptionPrefix = (
-                    "There are other vehicles driving around you, and below is their basic information:\n"
-                )
+                descriptionPrefix = "There are other vehicles driving around you, and below is their basic information:\n"
                 return descriptionPrefix + SVDescription
             else:
                 "There are no other vehicles driving near you, so you can drive completely according to your own ideas.\n"
@@ -467,7 +442,9 @@ class EnvScenario:
         )
         currentLaneIndex: LaneIndex = self.ego.lane_index
         if self.isInJunction(self.ego):
-            roadCondition = "You are driving in an intersection, you can't change lane. "
+            roadCondition = (
+                "You are driving in an intersection, you can't change lane. "
+            )
             roadCondition += f"Your current position is `({self.ego.position[0]:.2f}, {self.ego.position[1]:.2f})`, speed is {self.ego.speed:.2f} m/s, and acceleration is {self.ego.action['acceleration']:.2f} m/s^2.\n"
             SVDescription = self.describeSVJunctionLane(currentLaneIndex)
         else:

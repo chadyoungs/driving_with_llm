@@ -2,15 +2,9 @@ import os
 import textwrap
 import time
 
-from langchain.messages import (
-    HumanMessage,
-    SystemMessage,
-)
+from langchain.messages import HumanMessage, SystemMessage
 from langchain_ollama import ChatOllama
-from langchain_openai import (
-    AzureChatOpenAI,
-    ChatOpenAI,
-)
+from langchain_openai import AzureChatOpenAI, ChatOpenAI
 from rich import print
 
 
@@ -74,8 +68,12 @@ class ReflectionAgent:
             HumanMessage(content=human_message),
         ]
         response = self.llm.invoke(messages)
-        target_phrase = f"{delimiter} What should LLM do to avoid such errors in the future:"
-        substring = response.content[response.content.find(target_phrase) + len(target_phrase) :].strip()
+        target_phrase = (
+            f"{delimiter} What should LLM do to avoid such errors in the future:"
+        )
+        substring = response.content[
+            response.content.find(target_phrase) + len(target_phrase) :
+        ].strip()
         corrected_memory = f"{delimiter} I have made a misake before and below is my self-reflection:\n{substring}"
         print("Reflection done. Time taken: {:.2f}s".format(time.time() - start_time))
         print(

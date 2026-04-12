@@ -5,23 +5,13 @@ import random
 import gymnasium as gym
 import numpy as np
 import yaml
-from gymnasium.wrappers import (
-    RecordVideo,
-)
+from gymnasium.wrappers import RecordVideo
 from rich import print
 
-from driving_with_llm.driver_agent.driverAgent import (
-    DriverAgent,
-)
-from driving_with_llm.driver_agent.reflectionAgent import (
-    ReflectionAgent,
-)
-from driving_with_llm.driver_agent.vectorStore import (
-    DrivingMemory,
-)
-from driving_with_llm.scenario.envScenario import (
-    EnvScenario,
-)
+from driving_with_llm.driver_agent.driverAgent import DriverAgent
+from driving_with_llm.driver_agent.reflectionAgent import ReflectionAgent
+from driving_with_llm.driver_agent.vectorStore import DrivingMemory
+from driving_with_llm.scenario.envScenario import EnvScenario
 
 test_list_seed = [
     5838,
@@ -45,7 +35,9 @@ test_list_seed = [
 
 
 def setup_env(config):
-    os.environ["OPENAI_API_TYPE"] = "open_ai"  # For compatibility, use 'open_ai' to indicate local LLM in the codebase
+    os.environ["OPENAI_API_TYPE"] = (
+        "open_ai"  # For compatibility, use 'open_ai' to indicate local LLM in the codebase
+    )
     os.environ["OPENAI_API_KEY"] = config["MODEL_NAME"]
     os.environ["OPENAI_CHAT_MODEL"] = config["MODEL_NAME"]
 
@@ -200,7 +192,9 @@ if __name__ == "__main__":
                     mode_action_count = fewshot_actions.count(mode_action)
 
                 if few_shot_num == 0:
-                    print("[yellow]Now in the zero-shot mode, no few-shot memories.[/yellow]")
+                    print(
+                        "[yellow]Now in the zero-shot mode, no few-shot memories.[/yellow]"
+                    )
                 else:
                     print(
                         "[green4]Successfully find[/green4]",
@@ -314,9 +308,9 @@ if __name__ == "__main__":
                                 print(
                                     "[green] Successfully add a new memory item to update memory module.[/green]. Now the database has ",
                                     len(
-                                        updated_memory.scenario_memory._collection.get(include=["embeddings"])[
-                                            "embeddings"
-                                        ]
+                                        updated_memory.scenario_memory._collection.get(
+                                            include=["embeddings"]
+                                        )["embeddings"]
                                     ),
                                     " items.",
                                 )
@@ -348,7 +342,11 @@ if __name__ == "__main__":
                             "[green] Successfully add[/green] ",
                             cnt,
                             " [green]new memory item to update memory module.[/green]. Now the database has ",
-                            len(updated_memory.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+                            len(
+                                updated_memory.scenario_memory._collection.get(
+                                    include=["embeddings"]
+                                )["embeddings"]
+                            ),
                             " items.",
                         )
                     else:

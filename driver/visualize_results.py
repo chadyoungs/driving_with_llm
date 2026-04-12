@@ -6,12 +6,8 @@ import gradio as gr
 import yaml
 from rich import print
 
-from driving_with_llm.driver_agent.vectorStore import (
-    DrivingMemory,
-)
-from driving_with_llm.scenario.envScenarioReplay import (
-    EnvScenarioReplay,
-)
+from driving_with_llm.driver_agent.vectorStore import DrivingMemory
+from driving_with_llm.scenario.envScenarioReplay import EnvScenarioReplay
 
 config = yaml.load(
     open("config.yaml"),
@@ -37,7 +33,9 @@ def viewFrame(
     imd = esr.plotSce(decisionFrame)
     framePrompts = esr.getPrompts(decisionFrame)
     if framePrompts.done:
-        doneString = "The decision for this frame failed, resulting in subsequent collisions."
+        doneString = (
+            "The decision for this frame failed, resulting in subsequent collisions."
+        )
     else:
         doneString = "The decision for this frame was successful, and the vehicle did not collide."
 
@@ -119,7 +117,9 @@ def lastFramePrompts(
             TAStr,
         )
     else:
-        raise gr.Error("The range of Decision Frame is {}~{}.".format(minFrame, maxFrame))
+        raise gr.Error(
+            "The range of Decision Frame is {}~{}.".format(minFrame, maxFrame)
+        )
 
 
 def commitExperience(
@@ -138,14 +138,18 @@ def commitExperience(
         if match:
             sce_descrip = match.group(1).strip()
         else:
-            raise gr.Error("Cannot find Driving scenario description in human_question.")
+            raise gr.Error(
+                "Cannot find Driving scenario description in human_question."
+            )
         pattern = r"Response to user:#### (\d+)"
         match = re.search(pattern, expertExperience)
         if match:
             action = int(match.group(1))
             print("action: ", action)
         else:
-            raise gr.Error("Plase make sure the last line contains 'Response to user:####'.")
+            raise gr.Error(
+                "Plase make sure the last line contains 'Response to user:####'."
+            )
         vector_memory.addMemory(
             sce_descrip,
             framePrompts.description,
@@ -161,12 +165,16 @@ def commitExperience(
         _, _, _, TAMDStr, TAStr = viewFrame(decisionFrame)
         return TAMDStr, TAStr
     except Exception as e:
-        gr.Error("There is something wrong when commit the edited Thoughts and Actions.")
+        gr.Error(
+            "There is something wrong when commit the edited Thoughts and Actions."
+        )
         raise e
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Example program with command line arguments.")
+    parser = argparse.ArgumentParser(
+        description="Example program with command line arguments."
+    )
     parser.add_argument(
         "-r",
         "--result_db_path",

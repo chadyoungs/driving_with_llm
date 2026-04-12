@@ -5,10 +5,11 @@ Traffic Data Analysis Script
 Analyzing traffic tracking data
 """
 
-import pandas as pd
-import numpy as np
 import json
 from datetime import datetime
+
+import numpy as np
+import pandas as pd
 
 
 def convert_to_serializable(value):

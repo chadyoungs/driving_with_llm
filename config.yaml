@@ -6,11 +6,13 @@ memory_module: False
 reflection_module: False  # True or False
 few_shot_num: 0  # 0 for zero-shot
 episodes_num: 5  # run episodes
-memory_path: "memories/20_mem"
+memory_path: "memories/mem"
 result_folder: "results"
 
 ############ Highway-env config ############
 simulation_duration: 120  # step
 vehicle_count: 15
-other_vehicle_type: "highway_env.vehicle.behavior.IDMVehicle"  # other types are: "highway_env.vehicle.behavior.DefensiveVehicle" or "highway_env.vehicle.behavior.AggressiveVehicle"
+other_vehicle_type: "highway_env.vehicle.behavior.IDMVehicle"  
+#other_vehicle_type: "highway_env.vehicle.behavior.DefensiveVehicle"
+#other_vehicle_type: "highway_env.vehicle.behavior.AggressiveVehicle"
 vehicles_density: 2.0

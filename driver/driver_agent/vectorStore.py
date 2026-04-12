@@ -2,19 +2,11 @@ import os
 import textwrap
 
 from langchain_chroma import Chroma
-from langchain_core.documents import (
-    Document,
-)
-from langchain_ollama import (
-    OllamaEmbeddings,
-)
-from langchain_openai import (
-    OpenAIEmbeddings,
-)
+from langchain_core.documents import Document
+from langchain_ollama import OllamaEmbeddings
+from langchain_openai import OpenAIEmbeddings
 
-from driving_with_llm.scenario.envScenario import (
-    EnvScenario,
-)
+from driving_with_llm.scenario.envScenario import EnvScenario
 
 
 class DrivingMemory:
@@ -45,12 +37,18 @@ class DrivingMemory:
                 persist_directory=db_path,
             )
         else:
-            raise ValueError("Unknown ENCODE_TYPE: should be sce_encode or sce_language")
+            raise ValueError(
+                "Unknown ENCODE_TYPE: should be sce_encode or sce_language"
+            )
         print(
             "==========Loaded ",
             db_path,
             " Memory, Now the database has ",
-            len(self.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+            len(
+                self.scenario_memory._collection.get(include=["embeddings"])[
+                    "embeddings"
+                ]
+            ),
             " items.==========",
         )
 
@@ -64,7 +62,9 @@ class DrivingMemory:
             pass
         elif self.encode_type == "sce_language":
             query_scenario = driving_scenario.describe(frame_id)
-            similarity_results = self.scenario_memory.similarity_search_with_score(query_scenario, k=top_k)
+            similarity_results = self.scenario_memory.similarity_search_with_score(
+                query_scenario, k=top_k
+            )
             fewshot_results = []
             for idx in range(
                 0,
@@ -88,7 +88,9 @@ class DrivingMemory:
         elif self.encode_type == "sce_language":
             sce_descrip = sce_descrip.replace("'", "")
         # https://docs.trychroma.com/usage-guide#using-where-filters
-        get_results = self.scenario_memory._collection.get(where_document={"$contains": sce_descrip})
+        get_results = self.scenario_memory._collection.get(
+            where_document={"$contains": sce_descrip}
+        )
         # print("get_results: ", get_results)
 
         if len(get_results["ids"]) > 0:
@@ -105,7 +107,11 @@ class DrivingMemory:
             )
             print(
                 "Modify a memory item. Now the database has ",
-                len(self.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+                len(
+                    self.scenario_memory._collection.get(include=["embeddings"])[
+                        "embeddings"
+                    ]
+                ),
                 " items.",
             )
         else:
@@ -121,7 +127,11 @@ class DrivingMemory:
             id = self.scenario_memory.add_documents([doc])
             print(
                 "Add a memory item. Now the database has ",
-                len(self.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+                len(
+                    self.scenario_memory._collection.get(include=["embeddings"])[
+                        "embeddings"
+                    ]
+                ),
                 " items.",
             )
 
@@ -131,7 +141,11 @@ class DrivingMemory:
             "Delete",
             len(ids),
             "memory items. Now the database has ",
-            len(self.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+            len(
+                self.scenario_memory._collection.get(include=["embeddings"])[
+                    "embeddings"
+                ]
+            ),
             " items.",
         )
 
@@ -165,7 +179,11 @@ class DrivingMemory:
                 )
         print(
             "Merge complete. Now the database has ",
-            len(self.scenario_memory._collection.get(include=["embeddings"])["embeddings"]),
+            len(
+                self.scenario_memory._collection.get(include=["embeddings"])[
+                    "embeddings"
+                ]
+            ),
             " items.",
         )
 

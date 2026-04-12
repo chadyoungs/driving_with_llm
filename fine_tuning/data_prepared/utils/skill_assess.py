@@ -4,6 +4,8 @@ from collections import defaultdict
 import numpy as np
 import pandas as pd
 
+from fine_tuning.data_prepared.utils.dataloader import HighDataLoder
+
 MAX_SPEED_STD = 5.0
 MAX_ACCEL_STD = 1.5
 MAX_JERK = 3.0
@@ -16,7 +18,7 @@ MIN_TTC = 3.0
 MIN_THW = 2.0
 
 
-class SkillAssessment(object):
+class SkillAssessment(HighDataLoder):
     """
     Driving Skill Assessment
     """
@@ -29,142 +31,17 @@ class SkillAssessment(object):
         build_lookups=True,
         filtering=True,
     ):
+        super().__init__(
+            tracks_data_path,
+            tracks_metadata_path,
+            recording_metadata_path,
+            build_lookups,
+            filtering,
+        )
         self.assess_results = defaultdict(dict)
         self.skilled_drivers = defaultdict(list)
 
-        self._failed_vehicles = []
-
-        try:
-            # Load tracks (vehicle trajectory data)
-            self.tracks_df = pd.read_csv(tracks_data_path)
-            # Load tracksMeta (vehicle metadata: type, duration, etc.)
-            self.tracks_meta_df = pd.read_csv(tracks_metadata_path)
-            # Load recording metadata
-            self.recording_meta_df = pd.read_csv(recording_metadata_path)
-            print(f"✅ Loaded your data:")
-            print(
-                f"   - Tracks: {len(self.tracks_df):,} frames, {self.tracks_df['id'].nunique()} unique vehicles"
-            )
-            print(f"   - TracksMeta: {len(self.tracks_meta_df)} vehicles")
-            print(f"   - RecordingMeta: {len(self.recording_meta_df)} recordings")
-        except FileNotFoundError as e:
-            raise ValueError(f"❌ Missing file: {e} (ensure paths match data files)")
-        except Exception as e:
-            raise RuntimeError(f"❌ Failed to load data: {str(e)}")
-
-    def check_input_data(self, required_tracks_cols=None, required_meta_cols=None):
-        # Check critical columns exist (avoid KeyErrors with your data)
-        if required_tracks_cols is None:
-            required_tracks_cols = [
-                "frame",
-                "id",
-                "x",
-                "xAcceleration",
-                "precedingId",
-                "laneId",
-            ]
-        missing_tracks_cols = [
-            col for col in required_tracks_cols if col not in self.tracks_df.columns
-        ]
-        if missing_tracks_cols:
-            raise ValueError(
-                f"❌ Tracks file missing critical columns: {missing_tracks_cols}"
-            )
-
-        if required_meta_cols is None:
-            required_meta_cols = [
-                "id",
-                "height",
-                "numFrames",
-                "class",
-                "numLaneChanges",
-            ]
-        missing_meta_cols = [
-            col for col in required_meta_cols if col not in self.tracks_meta_df.columns
-        ]
-        if missing_meta_cols:
-            raise ValueError(
-                f"❌ TracksMeta file missing critical columns: {missing_meta_cols}"
-            )
-
-    @property
-    def frame_rate(self):
-        if not hasattr(self, "_frame_rate"):
-            self._frame_rate = (
-                self.recording_meta_df["frameRate"].iloc[0]
-                if "frameRate" in self.recording_meta_df.columns
-                else 25
-            )  # Default to 25Hz
-        return self._frame_rate
-
-    @property
-    def lane_centers(self):
-        if not hasattr(self, "_lane_centers"):
-            lane_id = 2
-            self._lane_centers = defaultdict()
-
-            for _, i in enumerate(
-                [
-                    self.recording_meta_df["upperLaneMarkings"].iloc[0],
-                    self.recording_meta_df["lowerLaneMarkings"].iloc[0],
-                ]
-            ):
-                lane_markings = [float(x) for x in i.split(";") if x.strip()]
-                lane_centers = [
-                    round(
-                        (lane_markings[i + 1] - lane_markings[i]) / 2
-                        + lane_markings[i],
-                        2,
-                    )
-                    for i in range(len(lane_markings) - 1)
-                ]
-
-                for i in lane_centers:
-                    self._lane_centers[lane_id] = i
-                    lane_id += 1
-                lane_id += 1
-
-        return self._lane_centers
-
-    @property
-    def front_vehicle_x_lookup(self):
-        # Build fast lookup for front vehicle's x-coordinate (frame + id → x)
-        # Critical for following distance calculation (no precedingX column!)
-        if not hasattr(self, "_front_vehicle_lookup"):
-            self._front_vehicle_lookup = self.tracks_df.set_index(["id", "frame"])[
-                "x"
-            ].to_dict()
-        return self._front_vehicle_lookup
-
-    @property
-    def valid_vehicles(self):
-        # Filter valid vehicles (driving duration > 10s to remove noise)
-        # Filter car class only (remove trucks for skill assessment)
-        if not hasattr(self, "_valid_vehicles"):
-            duration_threshold = 10  # seconds
-            self._valid_vehicles = self.tracks_meta_df[
-                (
-                    self.tracks_meta_df["numFrames"]
-                    > duration_threshold * self.frame_rate
-                )
-                & (self.tracks_meta_df["class"] == "Car")
-            ]["id"].unique()
-        return self._valid_vehicles
-
-    @property
-    def failed_vehicles(self):
-        return self._failed_vehicles
-
-    @property
-    def filtered_data(self):
-        if not hasattr(self, "_filtered_tracks_df"):
-            # Keep only valid vehicle data
-            self._filtered_tracks_df = self.tracks_df[
-                self.tracks_df["id"].isin(self.valid_vehicles)
-            ]
-        return self._filtered_tracks_df
-
-    def assess(self, tracks_data_path, expert_threshold=6):
+    def assess(self, expert_threshold=6):
         # --------------------------
         # Classify Driver Skill (Expert/Novice)
         # --------------------------
@@ -174,7 +51,7 @@ class SkillAssessment(object):
             speed_std = metrics.get("speed_std", np.inf)
             acc_std = metrics.get("acc_std", np.inf)
             jerk_mean = metrics.get("jerk_mean", np.inf)
-            lane_deviation = metrics.get("lane_deviation", np.inf)
+            lane_deviation = metrics.get("lane_deviation_mean", np.inf)
             follow_dist_mean = metrics.get("follow_dist_mean", np.inf)
             harsh_freq = metrics.get("harsh_freq", np.inf)
             lane_change_freq = metrics.get("lane_change_freq", np.inf)
@@ -199,12 +76,24 @@ class SkillAssessment(object):
 
             assessment_results["id"].append(vehicle_id)
             assessment_results["skill_level"].append(skill_level)
+            assessment_results["speed_std"].append(speed_std)
+            assessment_results["acc_std"].append(acc_std)
+            assessment_results["jerk_mean"].append(jerk_mean)
+            assessment_results["lane_deviation_mean"].append(lane_deviation)
+            assessment_results["follow_dist_mean"].append(follow_dist_mean)
+            assessment_results["harsh_freq"].append(harsh_freq)
+            assessment_results["lane_change_freq"].append(lane_change_freq)
+            assessment_results["critical_ttc_count"].append(critical_ttc_count)
+            assessment_results["critical_thw_count"].append(critical_thw_count)
 
         file_name = (
-            os.path.basename(tracks_data_path).split(".csv")[0] + "_skill_level.csv"
+            os.path.basename(self.tracks_data_path).split(".csv")[0]
+            + "_skill_level.csv"
         )
         cur_dir = os.path.dirname(os.path.abspath(__file__))
-        skill_level_csv_file_loc = os.path.join(cur_dir, "skill_level_results", f"{file_name}")
+        skill_level_csv_file_loc = os.path.join(
+            cur_dir, "generation_results", f"{file_name}"
+        )
         to_save_data = pd.DataFrame(assessment_results)
 
         to_save_data.to_csv(skill_level_csv_file_loc, index=False)
@@ -265,12 +154,7 @@ class SkillAssessment(object):
                 )
 
                 self.assess_results[vehicle_id]["speed_std"] = self.speed_std
-                self.assess_results[vehicle_id][
-                    "acc_mean"
-                ] = self.largest_acc_values_mean
-                self.assess_results[vehicle_id][
-                    "deacc_mean"
-                ] = self.minimum_acc_values_mean
+                self.assess_results[vehicle_id]["acc_std"] = self.acc_std
                 self.assess_results[vehicle_id][
                     "jerk_mean"
                 ] = self.largest_jerk_values_mean
@@ -309,7 +193,7 @@ class SkillAssessment(object):
                     driver_trajectory["lane_deviation"].mean(), 3
                 )
                 self.assess_results[vehicle_id][
-                    "lane_deviation"
+                    "lane_deviation_mean"
                 ] = self.lane_offset_mean
 
             except Exception as e:
@@ -376,9 +260,9 @@ class SkillAssessment(object):
                 )
 
                 harsh_maneuvers = (
-                    (driver_trajectory["acceleration"] > HARD_ACCEL)
-                    | (driver_trajectory["acceleration"] < -HARD_BRAKE)
-                ).sum()  # Threshold for harsh maneuver
+                    (driver_trajectory["acceleration"] > HARD_ACCEL).sum()
+                ) + ((driver_trajectory["acceleration"] < HARD_BRAKE).sum())
+
                 self.harsh_freq = round(
                     harsh_maneuvers / (len(driver_trajectory) / self.frame_rate), 3
                 )  # Harsh maneuvers per second
@@ -421,6 +305,17 @@ class SkillAssessment(object):
                 continue
 
     def lane_change_evaluate(self):
+        """
+        Lane Change Quality
+        Feature: Lane Change Quality (Smooth = Expert)
+
+        lateral acceleration during lane change should be moderate and not too high (comfortable)
+        longitudinal acceleration during lane change should not be harsh braking or acceleration (comfortable)
+        enough gap with front and rear vehicles in the target lane (safety)
+        avoid lane weaving (safety)
+        avoid lane changes in dense traffic (safety)
+        less redundant lane changes (efficiency)
+        """
         pass
 
     def safety_criteria(self):
@@ -465,19 +360,34 @@ class SkillAssessment(object):
                 continue
 
     def speed_compliance(self):
+        """
+        Speed Compliance
+        Feature: Speed Compliance (Compliant = Expert)
+
+        Consistently adhering to speed limits and avoiding excessive speeding can indicate a more responsible and experienced driver
+        , while frequent speeding may suggest a less skilled or more aggressive driver.
+        """
         pass
 
     def sight_clarity(self):
+        """
+        Sight Clarity
+        Feature: Sight Clarity (Clear = Expert)
+
+        Maintaining clear sightlines (e.g., not following too closely, avoiding blind spots) can indicate safer
+        and more skilled driving, while poor sightlines may suggest inexperience or riskier behavior.
+        """
         pass
 
 
 if __name__ == "__main__":
+    root_dir = "/mnt/sdb/datasets/highd-dataset-v1.0/data"
+    root_dir = "~/Documents/data/highd-dataset-v1.0/data"
+
     # Example usage
-    tracks_data_path = "/mnt/sdb/datasets/highd-dataset-v1.0/data/01_tracks.csv"
-    tracks_metadata_path = "/mnt/sdb/datasets/highd-dataset-v1.0/data/01_tracksMeta.csv"
-    recording_metadata_path = (
-        "/mnt/sdb/datasets/highd-dataset-v1.0/data/01_recordingMeta.csv"
-    )
+    tracks_data_path = os.path.join(root_dir, "01_tracks.csv")
+    tracks_metadata_path = os.path.join(root_dir, "01_tracksMeta.csv")
+    recording_metadata_path = os.path.join(root_dir, "01_recordingMeta.csv")
 
     skill_assessment = SkillAssessment(
         tracks_data_path, tracks_metadata_path, recording_metadata_path
@@ -489,4 +399,4 @@ if __name__ == "__main__":
     skill_assessment.harsh_maneuver_frequency()
     skill_assessment.lane_change_frequency()
     skill_assessment.safety_criteria()
-    skill_assessment.assess(tracks_data_path, expert_threshold=5)
+    skill_assessment.assess(expert_threshold=5)
