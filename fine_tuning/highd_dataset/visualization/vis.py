@@ -1,10 +1,11 @@
 """
-To visualize the highD dataset on its highway image, 
-create a script that loads the dataset, processes the vehicle trajectories, 
-and overlays them onto the background image. 
-The visualization will include lane boundaries, vehicle positions, 
+To visualize the highD dataset on its highway image,
+create a script that loads the dataset, processes the vehicle trajectories,
+and overlays them onto the background image.
+The visualization will include lane boundaries, vehicle positions,
 and relevant metrics like speed and time-to-collision (TTC).
 """
+
 import math
 import warnings
 

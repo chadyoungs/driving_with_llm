@@ -1,17 +1,20 @@
 import copy
 import os
 import random
+import warnings
 
 import gymnasium as gym
 import numpy as np
 import yaml
 from gymnasium.wrappers import RecordVideo
+from langchain_ollama import ChatOllama
 from rich import print
 
-from driving_with_llm.driver_agent.driverAgent import DriverAgent
-from driving_with_llm.driver_agent.reflectionAgent import ReflectionAgent
-from driving_with_llm.driver_agent.vectorStore import DrivingMemory
-from driving_with_llm.scenario.envScenario import EnvScenario
+from driving_with_llm.driver_agents.agents import DriverAgent, ReflectionAgent
+from driving_with_llm.driver_agents.vectorStore import DrivingMemory
+from driving_with_llm.scenarios.envScenario import EnvScenario
+
+warnings.filterwarnings("ignore")
 
 test_list_seed = [
     5838,
@@ -35,12 +38,6 @@ test_list_seed = [
 
 
 def setup_env(config):
-    os.environ["OPENAI_API_TYPE"] = (
-        "open_ai"  # For compatibility, use 'open_ai' to indicate local LLM in the codebase
-    )
-    os.environ["OPENAI_API_KEY"] = config["MODEL_NAME"]
-    os.environ["OPENAI_CHAT_MODEL"] = config["MODEL_NAME"]
-
     os.environ["LOCAL_MODEL_NAME"] = config["MODEL_NAME"]
     # environment setting
     env_config = {
@@ -78,43 +75,19 @@ def setup_env(config):
     return env_config
 
 
-if __name__ == "__main__":
-    import warnings
-
-    warnings.filterwarnings("ignore")
-
+def main():
     config = yaml.load(
         open("config.yaml"),
         Loader=yaml.FullLoader,
     )
     env_config = setup_env(config)
 
+    LOCAL_MODEL_NAME = config["LOCAL_MODEL_NAME"]
     MEMORY = config["memory_module"]
-
     REFLECTION = config["reflection_module"]
     memory_path = config["memory_path"]
     few_shot_num = config["few_shot_num"]
     result_folder = config["result_folder"]
-
-    if not os.path.exists(result_folder):
-        os.makedirs(result_folder)
-    with open(
-        result_folder + "/" + "log.txt",
-        "w",
-    ) as f:
-        f.write(
-            "memory_path {} | result_folder {} | few_shot_num: {} | lanes_count: {} \n".format(
-                memory_path,
-                result_folder,
-                few_shot_num,
-                env_config["highway-v0"]["lanes_count"],
-            )
-        )
-
-    agent_memory = DrivingMemory(db_path=memory_path)
-    if REFLECTION:
-        updated_memory = DrivingMemory(db_path=memory_path + "_updated")
-        updated_memory.combineMemory(agent_memory)
 
     episode = 0
     while episode < config["episodes_num"]:
@@ -150,6 +123,15 @@ if __name__ == "__main__":
             envType,
             seed,
             database_path,
+        )
+
+        llm = ChatOllama(
+            model=os.getenv("LOCAL_MODEL_NAME"),
+            keep_alive="60m",
+            temperature=0,
+            max_tokens=2000,
+            request_timeout=60,
+            verbose=True,
         )
         DA = DriverAgent(sce, verbose=True)
         if REFLECTION:
@@ -355,3 +337,27 @@ if __name__ == "__main__":
             print("==========Simulation {} Done==========".format(episode))
             episode += 1
             env.close()
+    pass
+
+
+if __name__ == "__main__":
+
+    if not os.path.exists(result_folder):
+        os.makedirs(result_folder)
+    with open(
+        result_folder + "/" + "log.txt",
+        "w",
+    ) as f:
+        f.write(
+            "memory_path {} | result_folder {} | few_shot_num: {} | lanes_count: {} \n".format(
+                memory_path,
+                result_folder,
+                few_shot_num,
+                env_config["highway-v0"]["lanes_count"],
+            )
+        )
+
+    agent_memory = DrivingMemory(db_path=memory_path)
+    if REFLECTION:
+        updated_memory = DrivingMemory(db_path=memory_path + "_updated")
+        updated_memory.combineMemory(agent_memory)

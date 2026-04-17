@@ -1,5 +1,4 @@
 import numpy as np
-
 from scipy.signal import savgol_filter
 
 
@@ -14,13 +13,15 @@ class TrendAnalyzer:
         self.fps = fps
         self.window = fps
         self.smoothed = None
-        self.trend = None    
-        self.slope = None      
+        self.trend = None
+        self.slope = None
         self.oscillation = None
-        self.desc = ""         
+        self.desc = ""
 
     def smooth(self, window_length=11, polyorder=2):
-        self.smoothed = savgol_filter(self.v, window_length=window_length, polyorder=polyorder)
+        self.smoothed = savgol_filter(
+            self.v, window_length=window_length, polyorder=polyorder
+        )
 
     def compute_trend_slope(self):
         x = np.arange(len(self.smoothed))
@@ -74,7 +75,7 @@ class TrendAnalyzer:
             "trend_type": self.trend,
             "slope": round(self.slope, 3),
             "oscillation": round(self.oscillation, 3),
-            "description": self.desc
+            "description": self.desc,
         }
 
 
@@ -92,10 +93,10 @@ class HierarchicalLaneAnalyzer:
         self.data = data
         self.maneuver = data["maneuver"]
         self.neighbors = data["neighbors"]
-        
+
         # 中间结果
-        self.level1 = {}    # 每个邻近车安全评级
-        self.level2 = ""    # 本车道状态
+        self.level1 = {}  # 每个邻近车安全评级
+        self.level2 = ""  # 本车道状态
         self.level3 = {"left": False, "right": False}  # 左右是否可安全变道
         self.reason = ""
         self.quality = "good"  # good / bad
@@ -110,7 +111,7 @@ class HierarchicalLaneAnalyzer:
         dist = data["dist"]
         ttc = data["TTC"]
         pet = data["PET"]
-        
+
         if "pre" in n_type:
             if ttc > 2.5 and dist > 20:
                 return "safe"
@@ -134,7 +135,9 @@ class HierarchicalLaneAnalyzer:
 
     def run_level1(self):
         for n_type in self.neighbors:
-            self.level1[n_type] = self.analyze_level1_single(n_type, self.neighbors[n_type])
+            self.level1[n_type] = self.analyze_level1_single(
+                n_type, self.neighbors[n_type]
+            )
 
     # =============================================
     # Level 2：分析本车道状态（舒适/压抑/被迫减速）
@@ -182,10 +185,15 @@ class HierarchicalLaneAnalyzer:
     # =============================================
     def judge_quality(self):
         if self.maneuver in [1, 2]:
-            target_safe = self.level3["left"] if self.maneuver ==1 else self.level3["right"]
+            target_safe = (
+                self.level3["left"] if self.maneuver == 1 else self.level3["right"]
+            )
             if not target_safe:
                 self.quality = "bad"
-            elif self.neighbors["left_foll"]["PET"] < 1.0 or self.neighbors["right_foll"]["PET"] <1.0:
+            elif (
+                self.neighbors["left_foll"]["PET"] < 1.0
+                or self.neighbors["right_foll"]["PET"] < 1.0
+            ):
                 self.quality = "bad"
             else:
                 self.quality = "good"
@@ -200,7 +208,7 @@ class HierarchicalLaneAnalyzer:
                 self.quality = "bad"
 
     def get_reason(self):
-        if self.maneuver in [1,2]:
+        if self.maneuver in [1, 2]:
             if self.level2 in ["uncomfortable (front slow)", "suppressed speed"]:
                 return "overtake (front vehicle too slow)"
             else:
@@ -214,10 +222,12 @@ class HierarchicalLaneAnalyzer:
                 return "stable cruising, no need to change"
 
     def build_summary(self):
-        mano_str = {0:"lane keeping",1:"left lane change",2:"right lane change"}[self.maneuver]
-        quality_str = "good and safe" if self.quality=="good" else "risky and bad"
-        
-        if self.maneuver !=0:
+        mano_str = {0: "lane keeping", 1: "left lane change", 2: "right lane change"}[
+            self.maneuver
+        ]
+        quality_str = "good and safe" if self.quality == "good" else "risky and bad"
+
+        if self.maneuver != 0:
             self.final_summary = (
                 f"Ego performs {mano_str}. Reason: {self.reason}. "
                 f"Current lane: {self.level2}. "
@@ -247,7 +257,7 @@ class HierarchicalLaneAnalyzer:
             "maneuver_type": self.maneuver,
             "reason": self.reason,
             "quality": self.quality,
-            "final_summary": self.final_summary
+            "final_summary": self.final_summary,
         }
 
 
@@ -263,15 +273,15 @@ if __name__ == "__main__":
         "v_ego_post": 26.0,
         "v_flow": 25.0,
         "neighbors": {
-            "preceding": {"exist":1, "dist":18, "v_rel":2.0, "TTC":2.2, "PET":99},
-            "following": {"exist":1, "dist":25, "v_rel":-0.5, "TTC":99, "PET":2.0},
-            "left_pre": {"exist":1, "dist":12, "v_rel":1.0, "TTC":1.2, "PET":99},
-            "left_along": {"exist":1, "dist":1.8, "v_rel":0, "TTC":99, "PET":99},
-            "left_foll": {"exist":1, "dist":10, "v_rel":0.5, "TTC":99, "PET":0.8},
-            "right_pre": {"exist":0, "dist":999, "v_rel":0, "TTC":99, "PET":99},
-            "right_along": {"exist":0, "dist":999, "v_rel":0, "TTC":99, "PET":99},
-            "right_foll": {"exist":0, "dist":999, "v_rel":0, "TTC":99, "PET":99},
-        }
+            "preceding": {"exist": 1, "dist": 18, "v_rel": 2.0, "TTC": 2.2, "PET": 99},
+            "following": {"exist": 1, "dist": 25, "v_rel": -0.5, "TTC": 99, "PET": 2.0},
+            "left_pre": {"exist": 1, "dist": 12, "v_rel": 1.0, "TTC": 1.2, "PET": 99},
+            "left_along": {"exist": 1, "dist": 1.8, "v_rel": 0, "TTC": 99, "PET": 99},
+            "left_foll": {"exist": 1, "dist": 10, "v_rel": 0.5, "TTC": 99, "PET": 0.8},
+            "right_pre": {"exist": 0, "dist": 999, "v_rel": 0, "TTC": 99, "PET": 99},
+            "right_along": {"exist": 0, "dist": 999, "v_rel": 0, "TTC": 99, "PET": 99},
+            "right_foll": {"exist": 0, "dist": 999, "v_rel": 0, "TTC": 99, "PET": 99},
+        },
     }
 
     # 分析

@@ -143,6 +143,7 @@ class DataGenerator(HighDataLoder):
                 ]
                 print(driver_clip)
                 import pdb
+
                 pdb.set_trace()
                 analysis_res = self.clip_analysis(driver_clip, vehicle_id, None)
                 res = self.save_clip(analysis_res)
