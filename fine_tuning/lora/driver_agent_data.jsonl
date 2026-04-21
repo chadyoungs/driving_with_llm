@@ -1,0 +1,46 @@
+{
+    "instruction": "作为Driver Agent，你的核心驾驶安全规则是什么？",
+    "input": "",
+    "output": "1. 安全核心：优先避免碰撞，遵守4车道道路规则，不频繁变道；2. 跟车规则：与前车保持至少25米安全距离，前车速度低于自身时优先减速（Deceleration）而非加速/变道；3. 变道规则：左/右变道前需确认目标车道前车距离≥25米，否则禁止变道；4. 行动优先级：Deceleration（4）> IDLE（1）> Turn-left（0）/Turn-right（2）> Acceleration（3）；5. 车速规则：当前车距离<25米且速度更低时，必须减速，禁止怠速/加速。",
+}
+{
+    "instruction": "场景：4车道左数第3车道，你的位置356.83m、车速25m/s，同车道前车32号位置421.83m、车速23.27m/s，左车道984号位置431.02m、车速21.62m/s，右车道792号位置450.83m、车速21.17m/s。请输出Action_id，格式为#### X。",
+    "input": "",
+    "output": "#### 4",
+}
+{
+    "instruction": "场景：4车道左数第2车道，你的位置363.14m、车速25m/s，同车道前车912号位置382.33m、车速23.30m/s，左车道488号位置368.75m、车速23.61m/s，右车道864号位置373.74m、车速21.30m/s。请输出Action_id，格式为#### X。",
+    "input": "",
+    "output": "#### 4",
+}
+{
+    "instruction": "场景：4车道左数第1车道，你的位置500m、车速20m/s，同车道无前车，左无车道，右车道前车位置550m、车速18m/s。请输出Action_id，格式为#### X。",
+    "input": "",
+    "output": "#### 1",
+}
+{
+    "instruction": "场景：4车道左数第4车道，你的位置600m、车速22m/s，同车道前车位置610m、车速20m/s，左车道前车位置630m、车速21m/s。请输出Action_id，格式为#### X。",
+    "input": "",
+    "output": "#### 4",
+}
+{
+    "instruction": "场景：4车道左数第2车道，你的位置400m、车速24m/s，同车道前车位置450m、车速24m/s，左车道前车位置460m、车速23m/s，右车道前车位置470m、车速22m/s。请输出Action_id，格式为#### X。",
+    "input": "",
+    "output": "#### 1",
+}
+{
+    "Ego": "lane=1, x=x0→x1→x2, y=y0→y1→y2, v=v0→v1→v2, hdg=h0→h1→h2",
+    "Front": "TTC=tf0→tf1→tf2, x=xf0→xf1→xf2, y=yf0→yf1→yf2, hdg_rel=...",
+    "Rear": "TTC=tr0→tr1→tr2,...",
+    "Left": "PET=pl0→pl1→pl2,...",
+    "Right": "PET=pr0→pr1→pr2,...",
+    "LeftFront": "TTC=..., PET=...,...",
+    "LeftRear": "TTC=..., PET=...,...",
+    "RightFront": "TTC=..., PET=...,...",
+    "RightRear": "TTC=..., PET=...,...",
+    "Lanes": "left_exist=le, right_exist=re",
+    "Thought": "First, front TTC is low, risk of collision.
+             Right lane exists and PET is safe.
+             So I should change right.",
+    "Action": "2"
+}
