@@ -177,23 +177,33 @@ class DriverAgent:
 
         # Parse "action x1 y1 x2 y2 x3 y3 x4 y4" output format.
         response_line = response_content.strip().splitlines()[-1].strip()
-        tokens = response_line.split()
-        action_word = tokens[0].lower() if tokens else ""
-        result = ACTION_MAP.get(action_word, -1)
+        if not response_line:
+            print("[yellow]Warning: LLM returned an empty response. Defaulting to 'keep'.[/yellow]")
+            result = ACTION_MAP["keep"]
+        else:
+            tokens = response_line.split()
+            action_word = tokens[0].lower() if tokens else ""
+            result = ACTION_MAP.get(action_word, -1)
 
-        if result == -1:
-            print("Output action not recognised, asking LLM to clarify...")
-            check_message = (
-                f"The autonomous driving agent returned: '{response_line}'\n"
-                "Extract the intended action and reply with exactly one word from:\n"
-                "  accelerate, decelerate, keep, left_lane_change, right_lane_change\n"
-                "No other text."
-            )
-            messages = [HumanMessage(content=check_message)]
-            check_response = self.llm.invoke(messages)
-            print("Check response:", check_response.content)
-            action_word = check_response.content.strip().lower()
-            result = ACTION_MAP.get(action_word, 1)  # fall back to 'keep'
+            if result == -1:
+                print("Output action not recognised, asking LLM to clarify...")
+                check_message = (
+                    f"The autonomous driving agent returned: '{response_line}'\n"
+                    "Extract the intended action and reply with exactly one word from:\n"
+                    "  accelerate, decelerate, keep, left_lane_change, right_lane_change\n"
+                    "No other text."
+                )
+                messages = [HumanMessage(content=check_message)]
+                check_response = self.llm.invoke(messages)
+                print("Check response:", check_response.content)
+                action_word = check_response.content.strip().lower()
+                result = ACTION_MAP.get(action_word, -1)
+                if result == -1:
+                    print(
+                        "[yellow]Warning: action still not recognised after clarification; "
+                        f"falling back to 'keep'. (raw: '{action_word}')[/yellow]"
+                    )
+                    result = ACTION_MAP["keep"]
 
         few_shot_answers_store = ""
         for i in range(len(fewshot_messages)):
