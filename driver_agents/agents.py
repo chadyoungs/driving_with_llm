@@ -7,14 +7,11 @@ import time
 from typing import List
 
 from langchain.messages import AIMessage, HumanMessage, SystemMessage
-from langchain.output_parsers import ResponseSchema, StructuredOutputParser
-from langchain.prompts import ChatPromptTemplate, HumanMessagePromptTemplate
-from langchain_community.callbacks.manager import (OpenAICallbackHandler,
-                                                   get_openai_callback)
-from rich import print
-from scenario.scenario import Scenario
 
-from driving_with_llm.scenario.envScenario import EnvScenario
+
+from rich import print
+
+#from scenario.envScenario import EnvScenario
 
 example_answer = textwrap.dedent(
     f"""\
@@ -75,7 +72,6 @@ class DriverAgent:
             if not frames or len(frames) != 6:
                 frame_strs = [EMPTY_STR] * 6
             else:
-                # 正常6帧 → 转字符串
                 frame_strs = [str(f) for f in frames]
 
             line = f"{key}: " + ",".join(frame_strs)
@@ -211,7 +207,7 @@ class DriverAgent:
             few_shot_answers_store,
         )
 
-
+'''
 class OutputParser:
     def __init__(
         self,
@@ -344,3 +340,4 @@ class ReflectionAgent:
         )
 
         return corrected_memory
+'''

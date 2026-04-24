@@ -1,0 +1,184 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OpenSCENARIO xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xsi:noNamespaceSchemaLocation="OpenSCENARIO.xsd"
+              version="1.2.0">
+    <FileHeader revMajor="1" revMinor="2" date="2026-03-09" description="无信号灯十字路口两车交汇场景"/>
+    <ParameterDeclarations>
+        <!-- Global Parameters -->
+        <ParameterDeclaration name="main_car_speed" parameterType="double" value="8.33"/> <!-- 30km/h convert to m/s -->
+        <ParameterDeclaration name="obstacle_car_speed" parameterType="double" value="5.56"/> <!-- 20km/h convert to m/s -->
+        <ParameterDeclaration name="crossing_size" parameterType="double" value="7"/> <!-- crossing size -->
+    </ParameterDeclarations>
+
+    <!-- 场景实体定义 -->
+    <Entities>
+        <!-- 主车：从南向北直行 -->
+        <ScenarioObject name="MainVehicle">
+            <Vehicle name="MainCar" vehicleCategory="car">
+                <ParameterDeclarations>
+                    <ParameterDeclaration name="max_speed" parameterType="double" value="15"/> <!-- Maximum speed m/s -->
+                </ParameterDeclarations>
+                <BoundingBox>
+                    <Center x="0" y="0" z="1"/>
+                    <Dimensions width="1.8" length="4.5" height="1.5"/>
+                </BoundingBox>
+                <Performance maxSpeed="15" maxAcceleration="3" maxDeceleration="8"/>
+                <Axles>
+                    <FrontAxle maxSteering="40" wheelDiameter="0.6" trackWidth="1.5" positionX="1.8" positionZ="0.3"/>
+                    <RearAxle wheelDiameter="0.6" trackWidth="1.5" positionX="-1.8" positionZ="0.3"/>
+                </Axles>
+            </Vehicle>
+            <PrivateAction>
+                <LongitudinalAction>
+                    <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1" unit="s"/>
+                        <TargetSpeed value="${main_car_speed}"/>
+                    </SpeedAction>
+                </LongitudinalAction>
+            </PrivateAction>
+        </ScenarioObject>
+
+        <!-- 障碍车：从西向东直行 -->
+        <ScenarioObject name="ObstacleVehicle">
+            <Vehicle name="ObstacleCar" vehicleCategory="car">
+                <ParameterDeclarations>
+                    <ParameterDeclaration name="max_speed" parameterType="double" value="10"/> <!-- 最大速度 m/s -->
+                </ParameterDeclarations>
+                <BoundingBox>
+                    <Center x="0" y="0" z="1"/>
+                    <Dimensions width="1.8" length="4.5" height="1.5"/>
+                </BoundingBox>
+                <Performance maxSpeed="10" maxAcceleration="3" maxDeceleration="8"/>
+                <Axles>
+                    <FrontAxle maxSteering="40" wheelDiameter="0.6" trackWidth="1.5" positionX="1.8" positionZ="0.3"/>
+                    <RearAxle wheelDiameter="0.6" trackWidth="1.5" positionX="-1.8" positionZ="0.3"/>
+                </Axles>
+            </Vehicle>
+            <PrivateAction>
+                <LongitudinalAction>
+                    <SpeedAction>
+                        <SpeedActionDynamics dynamicsShape="linear" value="1" unit="s"/>
+                        <TargetSpeed value="${obstacle_car_speed}"/>
+                    </SpeedAction>
+                </LongitudinalAction>
+            </PrivateAction>
+        </ScenarioObject>
+
+        <!-- 道路网络引用（仿真工具需关联对应路网，此处定义逻辑位置） -->
+        <RoadNetwork>
+            <LogicFile filepath="crossing_road_network.xodr"/> <!-- 需配套 OpenDRIVE 路网文件 -->
+        </RoadNetwork>
+    </Entities>
+
+    <!-- 场景情节定义 -->
+    <Storyboard>
+        <!-- 初始化：设置车辆初始位置 -->
+        <Init>
+            <Actions>
+                <PrivateAction object="MainVehicle">
+                    <PositionAction>
+                        <Position x="${crossing_size}/4" y="-${crossing_size}/4-5" z="0" h="0" p="0" r="0"/> <!-- east side of crossing -->
+                    </PositionAction>
+                </PrivateAction>
+                <PrivateAction object="ObstacleVehicle">
+                    <PositionAction>
+                        <Position x="-${crossing_size}/4-5" y="-${crossing_size}/4" z="0" h="90" p="0" r="0"/> <!-- south side of crossing -->
+                    </PositionAction>
+                </PrivateAction>
+            </Actions>
+        </Init>
+
+        <!-- 主情节：两车直行通过路口 -->
+        <Story name="CrossingStory">
+            <Act name="CrossingAct">
+                <Maneuver name="MainCarManeuver">
+                    <Event name="MainCarMoveEvent" priority="overwrite">
+                        <StartTrigger>
+                            <ConditionGroup>
+                                <Condition delay="0" edge="rising" name="SimulationStart">
+                                    <ByValueCondition value="true"/>
+                                </Condition>
+                            </ConditionGroup>
+                        </StartTrigger>
+                        <EndTrigger>
+                            <ConditionGroup>
+                                <Condition delay="0" edge="rising" name="MainCarPassCrossing">
+                                    <PositionCondition entityRef="MainVehicle" tolerance="1">
+                                        <RelativeRoadPosition roadId="road_1" s="${crossing_size/2 + 5}" t="0"/>
+                                    </PositionCondition>
+                                </Condition>
+                            </ConditionGroup>
+                        </EndTrigger>
+                        <Action name="MainCarMoveAction">
+                            <PrivateAction object="MainVehicle">
+                                <LongitudinalAction>
+                                    <SpeedAction>
+                                        <SpeedActionDynamics dynamicsShape="linear" value="2" unit="s"/>
+                                        <TargetSpeed value="${main_car_speed}"/>
+                                    </SpeedAction>
+                                </LongitudinalAction>
+                                <LateralAction>
+                                    <LaneKeepingAction/> <!-- 保持车道直行 -->
+                                </LateralAction>
+                            </PrivateAction>
+                        </Action>
+                    </Event>
+                </Maneuver>
+
+                <Maneuver name="ObstacleCarManeuver">
+                    <Event name="ObstacleCarMoveEvent" priority="overwrite">
+                        <StartTrigger>
+                            <ConditionGroup>
+                                <Condition delay="0" edge="rising" name="SimulationStart">
+                                    <ByValueCondition value="true"/>
+                                </Condition>
+                            </ConditionGroup>
+                        </StartTrigger>
+                        <EndTrigger>
+                            <ConditionGroup>
+                                <Condition delay="0" edge="rising" name="ObstacleCarPassCrossing">
+                                    <PositionCondition entityRef="ObstacleVehicle" tolerance="1">
+                                        <RelativeRoadPosition roadId="road_2" s="${crossing_size/2 + 5}" t="0"/>
+                                    </PositionCondition>
+                                </Condition>
+                            </ConditionGroup>
+                        </EndTrigger>
+                        <Action name="ObstacleCarMoveAction">
+                            <PrivateAction object="ObstacleVehicle">
+                                <LongitudinalAction>
+                                    <SpeedAction>
+                                        <SpeedActionDynamics dynamicsShape="linear" value="2" unit="s"/>
+                                        <TargetSpeed value="${obstacle_car_speed}"/>
+                                    </SpeedAction>
+                                </LongitudinalAction>
+                                <LateralAction>
+                                    <LaneKeepingAction/> <!-- 保持车道直行 -->
+                                </LateralAction>
+                            </PrivateAction>
+                        </Action>
+                    </Event>
+                </Maneuver>
+            </Act>
+        </Story>
+
+        <!-- 场景结束触发条件 -->
+        <StopTrigger>
+            <ConditionGroup>
+                <Condition delay="0" edge="rising" name="AllVehiclesPassed">
+                    <AndCondition>
+                        <Condition delay="0" edge="rising">
+                            <PositionCondition entityRef="MainVehicle" tolerance="1">
+                                <RelativeRoadPosition roadId="road_1" s="${crossing_size/2 + 10}" t="0"/>
+                            </PositionCondition>
+                        </Condition>
+                        <Condition delay="0" edge="rising">
+                            <PositionCondition entityRef="ObstacleVehicle" tolerance="1">
+                                <RelativeRoadPosition roadId="road_2" s="${crossing_size/2 + 10}" t="0"/>
+                            </PositionCondition>
+                        </Condition>
+                    </AndCondition>
+                </Condition>
+            </ConditionGroup>
+        </StopTrigger>
+    </Storyboard>
+</OpenSCENARIO>
