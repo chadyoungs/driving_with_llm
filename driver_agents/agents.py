@@ -13,6 +13,14 @@ from rich import print
 
 #from scenario.envScenario import EnvScenario
 
+ACTION_MAP = {
+    "accelerate": 3,
+    "decelerate": 4,
+    "keep": 1,
+    "left_lane_change": 0,
+    "right_lane_change": 2,
+}
+
 example_answer = textwrap.dedent(
     f"""\
         Well, I have 5 actions to choose from. Now, I would like to know which action is possible. 
@@ -64,6 +72,7 @@ class DriverAgent:
 
         lines = [
             "Surrounding vehicles 6-step sequential data (3s, 2Hz, origin = ego at 0s):",
+            "Field order per step: [x_pos(m), y_pos(m), velocity(m/s), acceleration(m/s²), heading(rad), TTC(s), PET(s)]",
             "",
         ]
 
@@ -108,29 +117,37 @@ class DriverAgent:
 
         system_message = textwrap.dedent(
             f"""\
-        You are a precise autonomous driving decision and trajectory prediction agent.
+        You are a precise autonomous driving decision and trajectory planning agent on a highway.
 
-        Input: 6-step sequential observations (3s, 2Hz) of 8 surrounding vehicles:
-        preceding, following, left_preceding, left_alongside, left_following,
-        right_preceding, right_alongside, right_following.
+        Driving objectives (in priority order):
+        1. Safety   – avoid collisions; TTC < 3 s or PET < 2 s signals danger and must be resolved first.
+        2. Efficiency – maintain smooth traffic flow; prefer higher safe speeds and minimise unnecessary slowdowns.
+        3. Comfort  – avoid harsh acceleration or braking; keep inputs gradual and smooth.
 
-        Each step contains: x, y, velocity, acceleration, heading, TTC, PET.
-        Coordinate origin is the ego vehicle's position at 0s.
-        If a vehicle does not exist, use [999,999,0,0,0,999,999] as the placeholder.
+        Input: 6-step sequential observations (3 s, 2 Hz) for 8 surrounding vehicles:
+          preceding, following,
+          left_preceding, left_alongside, left_following,
+          right_preceding, right_alongside, right_following.
 
-        PET is only meaningful for lateral / lane-change conflicts.
-        For preceding and following vehicles (longitudinal), set PET = 999.
+        Each step: [x_pos(m), y_pos(m), velocity(m/s), acceleration(m/s²), heading(rad), TTC(s), PET(s)]
+        Coordinate origin is the ego vehicle position at t = 0 s.
+        Missing vehicles are represented by the placeholder [999, 999, 0, 0, 0, 999, 999].
 
-        First reason briefly based on safety and traffic flow, then make a decision.
+        Metric notes:
+        - TTC (Time-To-Collision): longitudinal safety indicator; lower is more dangerous. 999 = no conflict.
+        - PET (Post-Encroachment-Time): lateral safety indicator for alongside vehicles. 999 = no conflict.
+        - For pure longitudinal pairs (preceding / following), PET = 999.
+
+        Reason briefly about safety, efficiency, and comfort, then make a decision.
         Choose exactly ONE action from: accelerate, decelerate, keep, left_lane_change, right_lane_change.
 
-        Predict the ego trajectory for the next 2 seconds at 2Hz (4 points total).
+        Predict the ego trajectory for the next 2 seconds at 2 Hz (4 points total).
         Output ONLY ONE line in the strict format below:
         action x1 y1 x2 y2 x3 y3 x4 y4
 
-        where (x1,y1) to (x4,y4) are ego positions at 0.5s, 1.0s, 1.5s and 2.0s respectively.
+        where (x1,y1) to (x4,y4) are ego positions at 0.5 s, 1.0 s, 1.5 s and 2.0 s respectively.
         Do NOT output any extra text, explanation or comment.
-        
+
         Example: keep 5.0 0.0 10.0 0.0 15.0 0.0 20.0 0.0
         """
         )
@@ -157,44 +174,26 @@ class DriverAgent:
         response_content = response.content
 
         print("\n")
-        decision_action = response_content.split(delimiter)[-1]
 
-        try:
-            result = int(decision_action)
-            if result < 0 or result > 4:
-                raise ValueError
-        except ValueError:
-            print("Output is not a int number, checking the output...")
-            check_message = f"""
-            You are a output checking assistant who is responsible for checking the output of another agent.
-            
-            The output you received is: {decision_action}
+        # Parse "action x1 y1 x2 y2 x3 y3 x4 y4" output format.
+        response_line = response_content.strip().splitlines()[-1].strip()
+        tokens = response_line.split()
+        action_word = tokens[0].lower() if tokens else ""
+        result = ACTION_MAP.get(action_word, -1)
 
-            Your should just output the right int type of action_id, with no other characters or delimiters.
-            i.e. :
-            | Action_id | Action Description                                     |
-            |--------|--------------------------------------------------------|
-            | 0      | Turn-left: change lane to the left of the current lane |
-            | 1      | IDLE: remain in the current lane with current speed   |
-            | 2      | Turn-right: change lane to the right of the current lane|
-            | 3      | Acceleration: accelerate the vehicle                 |
-            | 4      | Deceleration: decelerate the vehicle                 |
-
-
-            You answer format would be:
-            {delimiter} <correct action_id within 0-4>
-            """
-            messages = [
-                HumanMessage(content=check_message),
-            ]
-
-            check_response = self.llm.invoke(messages)
-            print(
-                "Check response:",
-                check_response.content,
+        if result == -1:
+            print("Output action not recognised, asking LLM to clarify...")
+            check_message = (
+                f"The autonomous driving agent returned: '{response_line}'\n"
+                "Extract the intended action and reply with exactly one word from:\n"
+                "  accelerate, decelerate, keep, left_lane_change, right_lane_change\n"
+                "No other text."
             )
-
-            result = int(check_response.content.split(delimiter)[-1])
+            messages = [HumanMessage(content=check_message)]
+            check_response = self.llm.invoke(messages)
+            print("Check response:", check_response.content)
+            action_word = check_response.content.strip().lower()
+            result = ACTION_MAP.get(action_word, 1)  # fall back to 'keep'
 
         few_shot_answers_store = ""
         for i in range(len(fewshot_messages)):
